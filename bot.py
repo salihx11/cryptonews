@@ -118,24 +118,39 @@ def get_prices():
     return data
 
 def get_large_font(size):
-    """Get a large font - Railway optimized"""
-    # Try multiple font paths
-    font_paths = [
-        "/usr/share/fonts/roboto-bold.ttf",  # Our downloaded font
+    """Get a large font - uses local font file"""
+    # Try local font file first
+    local_font_paths = [
+        "/app/roboto-bold.ttf",  # Font downloaded by Dockerfile
+        "./roboto-bold.ttf",     # Local path
+        "roboto-bold.ttf",       # Current directory
+    ]
+    
+    for font_path in local_font_paths:
+        try:
+            if os.path.exists(font_path):
+                print(f"✅ Using local font: {font_path}")
+                return ImageFont.truetype(font_path, size)
+        except Exception as e:
+            print(f"⚠️ Local font failed: {e}")
+            continue
+    
+    # Try system fonts as fallback
+    system_font_paths = [
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     ]
     
-    for font_path in font_paths:
+    for font_path in system_font_paths:
         try:
             if os.path.exists(font_path):
-                print(f"✅ Using font: {os.path.basename(font_path)}")
+                print(f"✅ Using system font: {font_path}")
                 return ImageFont.truetype(font_path, size)
-        except Exception as e:
+        except:
             continue
     
-    # Final fallback - try to create the largest possible font
-    print("⚠️ Using default font (fallback)")
+    # Final fallback
+    print("⚠️ Using default font")
     try:
         return ImageFont.load_default()
     except:
@@ -175,6 +190,8 @@ def edit_banner_price(symbol, price, file_name):
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         except:
             w, h = draw.textsize(price_text, font=font)
+        
+        print(f"📏 Text size: {w}x{h} for '{price_text}'")
         
         # Center the price text
         x = PRICE_POSITION[0] - w / 2
