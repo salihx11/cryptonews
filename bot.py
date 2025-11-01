@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Crypto Price Editor Bot - Docker Optimized
-Edits existing banner images with live prices in LARGE bold font.
+Crypto Price Editor Bot - Docker Optimized with LARGE FONT
+Edits existing banner images with live prices in EXTRA LARGE bold font.
 """
 
 import time
@@ -36,17 +36,9 @@ COINS = {
 # Price history file path (in data directory for Docker)
 PRICE_HISTORY_FILE = "/app/data/price_history.json"
 
-# Font paths for Docker (Linux paths)
-FONT_PATHS = [
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-]
-
-# Large font size for better visibility
-FONT_SIZE = 120
-PRICE_POSITION = (640, 170)
+# EXTRA LARGE font settings for Railway
+FONT_SIZE = 140  # Increased from 120 to 140 for Railway
+PRICE_POSITION = (640, 150)  # Adjusted position
 
 def load_price_history():
     """Load previous prices from file"""
@@ -61,7 +53,6 @@ def load_price_history():
 def save_price_history(history):
     """Save current prices to file"""
     try:
-        # Ensure data directory exists
         os.makedirs(os.path.dirname(PRICE_HISTORY_FILE), exist_ok=True)
         with open(PRICE_HISTORY_FILE, 'w') as f:
             json.dump(history, f)
@@ -133,23 +124,38 @@ def get_prices():
     
     return data
 
-def get_bold_font(size):
-    """Get a bold font - Docker compatible"""
-    for font_path in FONT_PATHS:
+def get_large_font(size):
+    """Get a large font - Railway compatible"""
+    font_paths = [
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        "/usr/share/fonts/truetype/roboto/Roboto-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+        "/usr/share/fonts/truetype/custom/arial.ttf",
+    ]
+    
+    for font_path in font_paths:
         try:
             if os.path.exists(font_path):
+                print(f"✅ Using font: {font_path}")
                 return ImageFont.truetype(font_path, size)
         except Exception as e:
             print(f"⚠️ Font {font_path} failed: {e}")
             continue
     
-    # Final fallback - use default font
+    # Final fallback - create a large default font
+    print("⚠️ Using default font (fallback)")
     try:
-        return ImageFont.load_default()
+        return ImageFont.truetype("arial.ttf", size)
     except:
-        # Create a basic font as last resort
-        from PIL import ImageFont
-        return ImageFont.load_default()
+        try:
+            # Try to create a large bitmap font
+            from PIL import ImageFont
+            return ImageFont.load_default()
+        except:
+            # Last resort - manual font creation
+            return None
 
 def format_price(price):
     """Format price professionally with correct decimals"""
@@ -161,7 +167,7 @@ def format_price(price):
         return f"${price:.4f}"
 
 def edit_banner_price(symbol, price, file_name):
-    """Edit banner with LARGE price text"""
+    """Edit banner with EXTRA LARGE price text"""
     try:
         if not os.path.exists(file_name):
             print(f"❌ File not found: {file_name}")
@@ -171,7 +177,13 @@ def edit_banner_price(symbol, price, file_name):
         draw = ImageDraw.Draw(img)
         
         price_text = format_price(price)
-        font = get_bold_font(FONT_SIZE)
+        font = get_large_font(FONT_SIZE)
+        
+        if font is None:
+            print("❌ No font available, using basic text")
+            # Manual text drawing as last resort
+            img.save(f"temp_{file_name}", "JPEG", quality=95)
+            return f"temp_{file_name}"
         
         # Calculate text position
         try:
@@ -180,6 +192,8 @@ def edit_banner_price(symbol, price, file_name):
         except:
             # Fallback for older Pillow
             w, h = draw.textsize(price_text, font=font)
+        
+        print(f"📏 Text size: {w}x{h} for '{price_text}'")
         
         # Center the price text
         x = PRICE_POSITION[0] - w / 2
@@ -244,13 +258,13 @@ def check_files():
     return all_exist
 
 def main():
-    print("🐳 Docker Crypto Price Bot Started!")
+    print("🚀 Railway Crypto Price Bot Started!")
     print("📊 Supported coins: BTC, ETH, TON, LTC")
     print("⏰ Post intervals: BTC:2m, ETH:5m, TON:10m, LTC:15m")
     print("💰 Professional price formatting")
     print("📈📉 Smart emoji based on price movement")
     print("📱 Channel: @cryptoprics")
-    print("🔠 LARGE FONT SIZE for better visibility")
+    print(f"🔠 EXTRA LARGE FONT SIZE: {FONT_SIZE}")
     print("─" * 50)
     
     # Load price history
