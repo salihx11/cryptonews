@@ -1,0 +1,10 @@
+# docker-compose.yml (optional)
+version: '3.8'
+services:
+  crypto-bot:
+    build: .
+    container_name: crypto-price-bot
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    working_dir: /app
