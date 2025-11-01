@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies including fonts
+# Install system dependencies with correct package names
 RUN apt-get update && apt-get install -y \
     fonts-liberation \
     fonts-dejavu \
@@ -11,17 +11,14 @@ RUN apt-get update && apt-get install -y \
     fonts-noto \
     fonts-noto-cjk \
     fonts-noto-color-emoji \
-    libglib2.0-0 \
-    libnss3 \
-    libgconf-2-4 \
-    libfontconfig1 \
+    fontconfig \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Arial font (most compatible)
-RUN wget -O /tmp/arial.ttf https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf \
-    && mkdir -p /usr/share/fonts/truetype/custom \
-    && cp /tmp/arial.ttf /usr/share/fonts/truetype/custom/ \
+# Download and install Arial-like font
+RUN wget -O /tmp/roboto-bold.ttf https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf \
+    && mkdir -p /usr/share/fonts/truetype/roboto \
+    && cp /tmp/roboto-bold.ttf /usr/share/fonts/truetype/roboto/ \
     && fc-cache -f -v
 
 # Copy requirements first for better caching
