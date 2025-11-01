@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Crypto Price Editor Bot
-Edits existing banner images with live prices in bold font.
+Edits existing banner images with live prices in LARGE bold font.
 """
 
 import time
@@ -36,7 +36,7 @@ COINS = {
 # Price history file to track previous prices
 PRICE_HISTORY_FILE = "price_history.json"
 
-# Try to find bold fonts
+# Try to find bold fonts - LARGER FONT SIZE
 FONT_PATHS = [
     "C:/Windows/Fonts/arialbd.ttf",  # Arial Bold
     "C:/Windows/Fonts/verdana.ttf", 
@@ -46,10 +46,11 @@ FONT_PATHS = [
     "C:/Windows/Fonts/arial.ttf"
 ]
 
-FONT_SIZE = 90  # Large bold font size
+# MUCH LARGER FONT SIZE for better visibility
+FONT_SIZE = 120  # Increased from 90 to 120 for larger text
 
-# Price position - centered
-PRICE_POSITION = (640, 150)
+# Price position - centered but adjusted for larger font
+PRICE_POSITION = (640, 170)  # Moved slightly down to accommodate larger text
 
 def load_price_history():
     """Load previous prices from file"""
@@ -163,7 +164,7 @@ def format_price(price):
         return f"${price:.4f}"
 
 def edit_banner_price(symbol, price, file_name):
-    """Edit banner with price only (no percentage)"""
+    """Edit banner with LARGE price text"""
     try:
         if not os.path.exists(file_name):
             print(f"❌ File not found: {file_name}")
@@ -176,7 +177,7 @@ def edit_banner_price(symbol, price, file_name):
         # Format price text professionally
         price_text = format_price(price)
         
-        # Load BOLD font (same font for all coins)
+        # Load LARGE BOLD font
         font = get_bold_font(FONT_SIZE)
         
         # Calculate text position
@@ -190,7 +191,7 @@ def edit_banner_price(symbol, price, file_name):
         x = PRICE_POSITION[0] - w / 2
         y = PRICE_POSITION[1] - h / 2
         
-        # Draw price text in WHITE - BOLD and clean modern look
+        # Draw price text in WHITE - EXTRA LARGE and BOLD
         draw.text((x, y), price_text, font=font, fill=(255, 255, 255))
         
         # Save
@@ -260,6 +261,7 @@ def main():
     print("💰 Professional price formatting")
     print("📈📉 Smart emoji based on price movement")
     print("📱 Channel: @cryptoprics")
+    print("🔠 LARGE FONT SIZE for better visibility")
     print("🌐 Multiple API fallbacks for reliability")
     print("─" * 50)
     
