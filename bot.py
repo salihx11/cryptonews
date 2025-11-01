@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Crypto Price Editor Bot - Railway Optimized
-Edits existing banner images with live prices in LARGE font.
+Crypto Price Editor Bot - Railway Optimized with Dynamic Font Download
 """
 
 import time
@@ -15,16 +14,12 @@ import json
 BOT_TOKEN = "8353463001:AAFSeYXQ9LmDmCmOaDWAAqVsUNIwBV9RAGM"
 CHAT_ID = "-1003177389386"
 
-# Multiple API endpoints for reliability
 API_URLS = [
     "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,toncoin,litecoin&vs_currencies=usd&include_24hr_change=true",
-    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,the-open-network,litecoin&vs_currencies=usd&include_24hr_change=true",
 ]
 
-# Alternative API as backup
 ALTERNATIVE_API = "https://api.binance.com/api/v3/ticker/price"
 
-# Coin configuration with different intervals (in seconds)
 COINS = {
     "BTC": {"id": "bitcoin", "file": "btc.jpg", "interval": 120, "symbol": "BTCUSDT"},
     "ETH": {"id": "ethereum", "file": "eth.jpg", "interval": 300, "symbol": "ETHUSDT"},
@@ -32,15 +27,80 @@ COINS = {
     "LTC": {"id": "litecoin", "file": "ltc.jpg", "interval": 900, "symbol": "LTCUSDT"},
 }
 
-# Price history file path
 PRICE_HISTORY_FILE = "price_history.json"
 
-# LARGE font settings
-FONT_SIZE = 130
+# EXTRA LARGE font settings
+FONT_SIZE = 140
 PRICE_POSITION = (640, 150)
+FONT_URL = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf"
+FONT_PATH = "/app/roboto-bold.ttf"
+
+def download_font():
+    """Download Roboto font if not exists"""
+    if not os.path.exists(FONT_PATH):
+        try:
+            print("📥 Downloading Roboto font...")
+            response = requests.get(FONT_URL, timeout=30)
+            response.raise_for_status()
+            with open(FONT_PATH, 'wb') as f:
+                f.write(response.content)
+            print("✅ Font downloaded successfully")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to download font: {e}")
+            return False
+    return True
+
+def get_large_font(size):
+    """Get a large font - downloads if needed"""
+    # Ensure font is available
+    if not download_font():
+        print("❌ Cannot download font, using fallback")
+        return create_fallback_font(size)
+    
+    # Try the downloaded font
+    try:
+        if os.path.exists(FONT_PATH):
+            font = ImageFont.truetype(FONT_PATH, size)
+            print(f"✅ Using Roboto Bold font size {size}")
+            return font
+    except Exception as e:
+        print(f"❌ Roboto font failed: {e}")
+    
+    # Fallback to system fonts
+    system_fonts = [
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ]
+    
+    for font_path in system_fonts:
+        try:
+            if os.path.exists(font_path):
+                font = ImageFont.truetype(font_path, size)
+                print(f"✅ Using system font: {os.path.basename(font_path)}")
+                return font
+        except:
+            continue
+    
+    # Final fallback - create a large bitmap font
+    return create_fallback_font(size)
+
+def create_fallback_font(size):
+    """Create a large fallback font"""
+    print("⚠️ Creating fallback font")
+    try:
+        # Try to load default font at larger size
+        return ImageFont.load_default()
+    except:
+        try:
+            # Create a basic font
+            from PIL import ImageFont
+            return ImageFont.load_default()
+        except:
+            # Last resort - return None
+            return None
 
 def load_price_history():
-    """Load previous prices from file"""
     try:
         if os.path.exists(PRICE_HISTORY_FILE):
             with open(PRICE_HISTORY_FILE, 'r') as f:
@@ -50,7 +110,6 @@ def load_price_history():
     return {}
 
 def save_price_history(history):
-    """Save current prices to file"""
     try:
         with open(PRICE_HISTORY_FILE, 'w') as f:
             json.dump(history, f)
@@ -58,7 +117,6 @@ def save_price_history(history):
         pass
 
 def get_price_change_direction(current_price, previous_price):
-    """Determine if price increased or decreased compared to previous price"""
     if previous_price is None:
         return "up"
     if current_price > previous_price:
@@ -69,13 +127,12 @@ def get_price_change_direction(current_price, previous_price):
         return "same"
 
 def get_prices_coingecko():
-    """Fetch prices from CoinGecko"""
     for api_url in API_URLS:
         try:
             response = requests.get(api_url, timeout=15)
             response.raise_for_status()
             data = response.json()
-            print(f"✅ CoinGecko prices fetched")
+            print("✅ CoinGecko prices fetched")
             return data
         except Exception as e:
             print(f"❌ CoinGecko API failed: {e}")
@@ -83,7 +140,6 @@ def get_prices_coingecko():
     return None
 
 def get_prices_binance():
-    """Fetch prices from Binance as backup"""
     try:
         prices = {}
         for coin, info in COINS.items():
@@ -107,7 +163,6 @@ def get_prices_binance():
         return None
 
 def get_prices():
-    """Fetch prices with fallback APIs"""
     data = get_prices_coingecko()
     
     if not data or "toncoin" not in data:
@@ -117,47 +172,7 @@ def get_prices():
     
     return data
 
-def get_large_font(size):
-    """Get a large font - uses local font file"""
-    # Try local font file first
-    local_font_paths = [
-        "/app/roboto-bold.ttf",  # Font downloaded by Dockerfile
-        "./roboto-bold.ttf",     # Local path
-        "roboto-bold.ttf",       # Current directory
-    ]
-    
-    for font_path in local_font_paths:
-        try:
-            if os.path.exists(font_path):
-                print(f"✅ Using local font: {font_path}")
-                return ImageFont.truetype(font_path, size)
-        except Exception as e:
-            print(f"⚠️ Local font failed: {e}")
-            continue
-    
-    # Try system fonts as fallback
-    system_font_paths = [
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ]
-    
-    for font_path in system_font_paths:
-        try:
-            if os.path.exists(font_path):
-                print(f"✅ Using system font: {font_path}")
-                return ImageFont.truetype(font_path, size)
-        except:
-            continue
-    
-    # Final fallback
-    print("⚠️ Using default font")
-    try:
-        return ImageFont.load_default()
-    except:
-        return None
-
 def format_price(price):
-    """Format price professionally"""
     if price >= 1000:
         return f"${price:,.0f}"
     elif price >= 1:
@@ -166,7 +181,6 @@ def format_price(price):
         return f"${price:.4f}"
 
 def edit_banner_price(symbol, price, file_name):
-    """Edit banner with LARGE price text"""
     try:
         if not os.path.exists(file_name):
             print(f"❌ File not found: {file_name}")
@@ -179,30 +193,37 @@ def edit_banner_price(symbol, price, file_name):
         font = get_large_font(FONT_SIZE)
         
         if font is None:
-            # Last resort - save image without text
+            print("❌ No font available, cannot add text")
             output_file = f"temp_{file_name}"
             img.save(output_file, "JPEG", quality=95)
             return output_file
         
-        # Calculate text position
+        # Calculate text dimensions
         try:
             bbox = draw.textbbox((0, 0), price_text, font=font)
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         except:
             w, h = draw.textsize(price_text, font=font)
         
-        print(f"📏 Text size: {w}x{h} for '{price_text}'")
+        print(f"📏 Text dimensions: {w}x{h} for '{price_text}'")
         
-        # Center the price text
+        # Center the text
         x = PRICE_POSITION[0] - w / 2
         y = PRICE_POSITION[1] - h / 2
         
-        # Draw price text in WHITE
+        # Add black background for better visibility
+        margin = 10
+        draw.rectangle(
+            [x - margin, y - margin, x + w + margin, y + h + margin],
+            fill=(0, 0, 0)
+        )
+        
+        # Draw white text
         draw.text((x, y), price_text, font=font, fill=(255, 255, 255))
         
         output_file = f"temp_{file_name}"
         img.save(output_file, "JPEG", quality=95)
-        print(f"✅ Created banner with size {FONT_SIZE} font")
+        print(f"✅ Created banner with {FONT_SIZE}px font")
         return output_file
         
     except Exception as e:
@@ -210,7 +231,6 @@ def edit_banner_price(symbol, price, file_name):
         return None
 
 def send_photo(file_path, caption):
-    """Send photo to Telegram"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
         
@@ -233,7 +253,6 @@ def send_photo(file_path, caption):
         return False
 
 def cleanup_temp_files():
-    """Remove temporary files"""
     try:
         for file in os.listdir('.'):
             if file.startswith("temp_") and file.endswith(".jpg"):
@@ -242,7 +261,6 @@ def cleanup_temp_files():
         pass
 
 def check_files():
-    """Check if all image files exist"""
     all_exist = True
     for coin, info in COINS.items():
         if not os.path.exists(info["file"]):
@@ -253,9 +271,13 @@ def check_files():
     return all_exist
 
 def main():
-    print("🚀 Railway Crypto Bot Started!")
-    print(f"🔠 Font Size: {FONT_SIZE}")
-    print("─" * 40)
+    print("🚀 Crypto Bot with Dynamic Font Download Started!")
+    print(f"🔠 Font Size: {FONT_SIZE}px")
+    print(f"📏 Banner Size: 1280x334")
+    print("─" * 50)
+    
+    # Download font at startup
+    download_font()
     
     price_history = load_price_history()
     cleanup_temp_files()
@@ -286,7 +308,7 @@ def main():
                         current_price = coin_data["usd"]
                         previous_price = price_history.get(coin)
                         
-                        print(f"🔄 {coin}: {format_price(current_price)}")
+                        print(f"🔄 Processing {coin}: {format_price(current_price)}")
                         
                         edited_file = edit_banner_price(coin, current_price, info["file"])
                         
@@ -299,20 +321,20 @@ def main():
                                 last_post[coin] = current_time
                                 price_history[coin] = current_price
                                 save_price_history(price_history)
-                                print(f"✅ {coin} posted")
+                                print(f"✅ {coin} posted successfully!")
                             
                             try:
                                 os.remove(edited_file)
                             except:
                                 pass
             
-            print("📡 Monitoring...")
+            print("📡 Monitoring... (30s)")
             time.sleep(30)
             
     except KeyboardInterrupt:
-        print("🛑 Bot stopped")
+        print("🛑 Bot stopped by user")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()
