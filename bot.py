@@ -161,7 +161,7 @@ def main():
     print("   TON: 10 minutes")
     print("   LTC: 15 minutes")
     print("📈 Shows 24h percentage changes")
-    print("📱 Channel: @cryptoprics")
+    print("📱 Channel: @cryptopricedrop")
     print("─" * 50)
     
     # Load price history
@@ -229,3 +229,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
