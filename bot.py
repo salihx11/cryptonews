@@ -12,6 +12,7 @@ import os
 # === CONFIGURATION ===
 BOT_TOKEN = "8353463001:AAFSeYXQ9LmDmCmOaDWAAqVsUNIwBV9RAGM"
 CHAT_ID = "-1003177389386"
+CHANNEL_USERNAME = "@cryptopricedrop"  # Channel username
 
 API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,toncoin,litecoin&vs_currencies=usd&include_24hr_change=true"
 
@@ -119,39 +120,6 @@ def format_price_message(coin, current_price, change_percentage, is_24h_change=F
     
     return message
 
-def format_24h_message(coin_data):
-    """Format message using 24h change from API"""
-    messages = []
-    for coin, info in COINS.items():
-        if info["id"] in coin_data:
-            data = coin_data[info["id"]]
-            current_price = data["usd"]
-            change_24h = data["usd_24h_change"]
-            
-            # Select emoji based on 24h change
-            if change_24h > 0:
-                arrow = "📈"
-                change_text = f"+{change_24h:.2f}%"
-            elif change_24h < 0:
-                arrow = "📉"
-                change_text = f"{change_24h:.2f}%"
-            else:
-                arrow = "➡️"
-                change_text = "0.00%"
-            
-            # Format price
-            if current_price >= 1000:
-                price_text = f"${current_price:,.0f}"
-            elif current_price >= 1:
-                price_text = f"${current_price:,.2f}"
-            else:
-                price_text = f"${current_price:.4f}"
-            
-            message = f"{arrow} <b>{coin}</b>\n💰 {price_text}\n📊 24h: {change_text}"
-            messages.append(message)
-    
-    return "\n\n".join(messages)
-
 def main():
     print("🤖 Crypto Price Bot Started! (Text Only)")
     print("📊 Supported coins: BTC, ETH, TON, LTC")
@@ -161,7 +129,7 @@ def main():
     print("   TON: 10 minutes")
     print("   LTC: 15 minutes")
     print("📈 Shows 24h percentage changes")
-    print("📱 Channel: @cryptopricedrop")
+    print(f"📱 Channel: {CHANNEL_USERNAME}")
     print("─" * 50)
     
     # Load price history
@@ -193,8 +161,8 @@ def main():
                             # Format message using 24h change from API
                             message = format_price_message(coin, current_price, change_24h, is_24h_change=True)
                             
-                            # Add channel tag
-                            full_message = f"{message}\n\n@cryptoprics"
+                            # Add channel username
+                            full_message = f"{message}\n\n{CHANNEL_USERNAME}"
                             
                             # Send to Telegram
                             if send_message(full_message):
@@ -206,7 +174,7 @@ def main():
                                 
                                 print(f"✅ {coin} posted successfully!")
                                 print(f"⏰ Next {coin} post in {info['interval']} seconds")
-                                print(f"📝 Message: {message.split('@')[0]}")
+                                print(f"📝 Message sent to: {CHANNEL_USERNAME}")
                             
             # Show next posting times
             print(f"\n⏰ Next posts:")
@@ -220,13 +188,15 @@ def main():
                 print(f"   {coin}: {minutes:02d}:{seconds:02d} ({status})")
             
             print(f"📡 Monitoring... Next update in 30s | {time.strftime('%H:%M:%S')}")
+            print(f"📍 Channel: {CHANNEL_USERNAME}")
             time.sleep(30)
             
     except KeyboardInterrupt:
         print("\n🛑 Bot stopped by user")
+        print(f"📍 Channel: {CHANNEL_USERNAME}")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+        print(f"📍 Channel: {CHANNEL_USERNAME}")
 
 if __name__ == "__main__":
     main()
-
